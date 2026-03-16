@@ -13,7 +13,7 @@ Wyze Scale Bridge is an Android app that:
 Important limitation:
 
 - it does not send data directly into Garmin Connect
-- Garmin Connect automatic consumer import from this kind of third-party Android app is not supported in a normal stable way
+- Garmin Connect now appears to support some Health Connect data on newer Android versions, but this project has not verified that Garmin reads Health Connect weight or body-fat records
 
 ## 2. Project Location
 
@@ -188,7 +188,26 @@ If Health Connect is not ready:
    - weight
    - body fat
 
-## 13. How Sync Works
+## 13. Garmin Expectations
+
+The current intended path is:
+
+Wyze CSV -> Wyze Scale Bridge -> Health Connect -> possible Garmin Connect read
+
+What is known:
+
+- Garmin Connect appears to support Health Connect in general on newer Android builds
+- this app writes weight and body-fat records into Health Connect
+
+What is not yet confirmed in this project:
+
+- whether Garmin Connect reads `weight`
+- whether Garmin Connect reads `body fat`
+- whether that behavior depends on Android version, Garmin app version, or device model
+
+If Garmin does not show the imported measurements, the app is still functioning correctly on the Health Connect side.
+
+## 14. How Sync Works
 
 The app now uses stable record IDs for imported measurements.
 
@@ -197,7 +216,7 @@ That means:
 - re-syncing the same imported data should not keep creating duplicate records
 - Health Connect writes are tied to deterministic IDs based on the imported measurement
 
-## 14. Test Reports
+## 15. Test Reports
 
 After running tests, reports are available here:
 
@@ -208,7 +227,7 @@ After running tests, reports are available here:
 
 Open those HTML files in a browser to inspect detailed results.
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 ### Java not found
 
@@ -263,7 +282,18 @@ Check:
 2. Health Connect permissions were granted
 3. the imported CSV is a real Wyze export
 
-## 16. Key Project Files
+### APK syncs to Health Connect but Garmin does not show weight
+
+Check:
+
+1. Garmin Connect is updated on the phone
+2. the phone is on a newer Android version with Health Connect support
+3. Garmin Connect has permission to access Health Connect data if required by Garmin's setup flow
+4. the measurement is visible inside Health Connect first
+
+If the data appears in Health Connect but not Garmin Connect, that likely means Garmin is not reading that specific record type on your device or app version.
+
+## 17. Key Project Files
 
 - App entry point:
   `C:\Users\xliup\OneDrive\Documents\codex\weights\app\src\main\java\com\codex\wyzescalebridge\MainActivity.kt`
@@ -278,7 +308,7 @@ Check:
 - Phone install script:
   `C:\Users\xliup\OneDrive\Documents\codex\weights\scripts\install_debug_apk.ps1`
 
-## 17. Recommended Daily Workflow
+## 18. Recommended Daily Workflow
 
 1. Edit code in Android Studio.
 2. Run:

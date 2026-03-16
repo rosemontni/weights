@@ -21,7 +21,7 @@ Wyze Scale Bridge is an Android app that imports Wyze Scale CSV exports and writ
 
 ## Known Limitation
 
-Garmin Connect automatic consumer import is not implemented because there is no stable supported path for this app to push those records directly into Garmin Connect.
+Garmin Connect direct push is not implemented. The current strategy is to write into Health Connect first, and rely on Garmin Connect's newer Health Connect support where available. Weight and body-fat ingestion by Garmin are still unverified in this project.
 
 ## Release Artifacts
 
@@ -30,4 +30,4 @@ Garmin Connect automatic consumer import is not implemented because there is no 
 
 ## Recommended Release Notes
 
-Wyze Scale Bridge 1.0.0 is the first packaged Android release of the project. It imports Wyze Scale CSV exports, previews the measurements, and writes them into Android Health Connect with idempotent sync behavior so repeated imports do not keep duplicating entries.
+Wyze Scale Bridge 1.0.0 is the first packaged Android release of the project. It imports Wyze Scale CSV exports, previews the measurements, and writes them into Android Health Connect with idempotent sync behavior so repeated imports do not keep duplicating entries. Garmin Connect may be able to read some Health Connect data on supported Android setups, but this release does not claim verified Garmin weight or body-fat ingestion.

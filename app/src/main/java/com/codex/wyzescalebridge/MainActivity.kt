@@ -52,22 +52,28 @@ import com.codex.wyzescalebridge.data.weightKgToLb
 import com.codex.wyzescalebridge.ui.theme.WyzeScaleBridgeTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.Instant
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val demoScenario = if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            DemoScenario.fromIntent(intent)
+        } else {
+            null
+        }
         enableEdgeToEdge()
         setContent {
             WyzeScaleBridgeTheme {
-                WyzeScaleBridgeApp()
+                WyzeScaleBridgeApp(demoScenario = demoScenario)
             }
         }
     }
 }
 
 @Composable
-private fun WyzeScaleBridgeApp() {
+private fun WyzeScaleBridgeApp(demoScenario: DemoScenario? = null) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -82,16 +88,22 @@ private fun WyzeScaleBridgeApp() {
         )
     }
 
-    var status by remember { mutableStateOf("Import a Wyze Scale CSV export to begin.") }
+    var status by remember { mutableStateOf(demoScenario?.status ?: "Import a Wyze Scale CSV export to begin.") }
     var isSyncing by remember { mutableStateOf(false) }
-    var healthAvailability by remember { mutableStateOf(healthConnectStatus(context)) }
+    var healthAvailability by remember {
+        mutableStateOf(demoScenario?.healthAvailability ?: healthConnectStatus(context))
+    }
 
     suspend fun syncImportedData() {
+        if (demoScenario != null) {
+            status = demoScenario.status
+            return
+        }
         isSyncing = true
         status = "Writing ${importedMeasurements.size} measurements to Health Connect..."
         status = when (val result = healthWriter.write(importedMeasurements)) {
             is HealthConnectWriter.SyncResult.Success ->
-                "Synced ${result.recordsWritten} Health Connect record(s). Garmin Connect still will not auto-ingest them."
+                "Synced ${result.recordsWritten} Health Connect record(s). Garmin Connect may read some Health Connect data on newer Android builds, but weight support is still unverified here."
             is HealthConnectWriter.SyncResult.Failure -> result.message
         }
         isSyncing = false
@@ -143,12 +155,23 @@ private fun WyzeScaleBridgeApp() {
     }
 
     LaunchedEffect(context) {
-        healthAvailability = healthConnectStatus(context)
+        if (demoScenario == null) {
+            healthAvailability = healthConnectStatus(context)
+        }
+    }
+
+    LaunchedEffect(demoScenario) {
+        if (demoScenario != null) {
+            importedMeasurements.clear()
+            importedMeasurements.addAll(demoScenario.measurements.sortedByDescending { it.measuredAt })
+            status = demoScenario.status
+            healthAvailability = demoScenario.healthAvailability
+        }
     }
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME && demoScenario == null) {
                 healthAvailability = healthConnectStatus(context)
             }
         }
@@ -173,6 +196,7 @@ private fun WyzeScaleBridgeApp() {
                 HeroCard(
                     healthAvailability = healthAvailability,
                     status = status,
+                    modeLabel = demoScenario?.modeLabel,
                     onImport = { importLauncher.launch(arrayOf("text/csv", "application/csv", "application/vnd.ms-excel", "text/comma-separated-values")) },
                     onSync = {
                         scope.launch {
@@ -206,7 +230,7 @@ private fun WyzeScaleBridgeApp() {
             }
 
             item {
-                LimitationsCard()
+                LimitationsCard(demoScenario = demoScenario)
             }
 
             if (importedMeasurements.isNotEmpty()) {
@@ -222,6 +246,7 @@ private fun WyzeScaleBridgeApp() {
 private fun HeroCard(
     healthAvailability: HealthAvailability,
     status: String,
+    modeLabel: String?,
     onImport: () -> Unit,
     onSync: () -> Unit,
     onInstallHealthConnect: () -> Unit,
@@ -243,6 +268,14 @@ private fun HeroCard(
                 text = "Imports Wyze Scale CSV exports and writes weight plus body-fat into Health Connect on Android.",
                 style = MaterialTheme.typography.bodyLarge,
             )
+            modeLabel?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
             Text(
                 text = "Health Connect status: ${healthAvailability.label}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -301,6 +334,11 @@ private fun SummaryCard(latest: WyzeMeasurement) {
 
 @Composable
 private fun LimitationsCard() {
+    LimitationsCard(demoScenario = null)
+}
+
+@Composable
+private fun LimitationsCard(demoScenario: DemoScenario?) {
     Card {
         Column(
             modifier = Modifier
@@ -310,10 +348,12 @@ private fun LimitationsCard() {
         ) {
             Text("Garmin reality check", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "This app stops at Health Connect because Garmin Connect does not provide a normal consumer API for body-weight imports from third-party Android apps.",
+                text = demoScenario?.garminMessagePrimary
+                    ?: "This app writes to Health Connect first. Garmin Connect now appears to support some Health Connect data on newer Android versions, but this project has not verified Garmin weight or body-fat ingestion yet.",
             )
             Text(
-                text = "If you want true Garmin auto-sync later, we would need to gamble on a private Garmin endpoint or get access to a Garmin partner program, both of which are more fragile than this starter app.",
+                text = demoScenario?.garminMessageSecondary
+                    ?: "The safest current path is still Wyze export to this app to Health Connect. If Garmin reads weight from Health Connect on your device, that becomes the bridge. If not, direct Garmin sync still needs a more fragile private or partner integration path.",
             )
         }
     }
@@ -371,3 +411,67 @@ private enum class HealthAvailability(val label: String) {
 }
 
 private fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)
+
+private data class DemoScenario(
+    val modeLabel: String,
+    val status: String,
+    val healthAvailability: HealthAvailability,
+    val measurements: List<WyzeMeasurement>,
+    val garminMessagePrimary: String,
+    val garminMessageSecondary: String,
+) {
+    companion object {
+        fun fromIntent(intent: Intent?): DemoScenario? {
+            return when (intent?.getStringExtra("screenshot_scene")) {
+                "overview" -> overview()
+                "garmin" -> garmin()
+                else -> null
+            }
+        }
+
+        private fun overview(): DemoScenario {
+            return DemoScenario(
+                modeLabel = "Screenshot scene: focused import overview",
+                status = "Imported 18 Wyze measurement(s). Ready to write the latest set into Health Connect.",
+                healthAvailability = HealthAvailability.Available,
+                measurements = sampleMeasurements(),
+                garminMessagePrimary = "This bridge keeps the workflow focused: import a Wyze CSV, preview the measurements, and write only weight plus body fat into Health Connect.",
+                garminMessageSecondary = "That is useful if you want a narrower permission surface than the direct Wyze Health Connect integration.",
+            )
+        }
+
+        private fun garmin(): DemoScenario {
+            return DemoScenario(
+                modeLabel = "Screenshot scene: Health Connect to Garmin path",
+                status = "Synced 27 Health Connect record(s). Garmin Connect may read some Health Connect data on supported Android setups, but weight support still needs device-level verification.",
+                healthAvailability = HealthAvailability.Available,
+                measurements = sampleMeasurements(),
+                garminMessagePrimary = "Garmin Connect now appears to support some Health Connect data on newer Android versions, so Health Connect is the best current bridge point.",
+                garminMessageSecondary = "This project still treats Garmin weight and body-fat ingestion as something to verify on your specific phone and Garmin app version.",
+            )
+        }
+
+        private fun sampleMeasurements(): List<WyzeMeasurement> {
+            return listOf(
+                WyzeMeasurement(Instant.parse("2026-03-15T11:45:00Z"), 82.4, 19.5, 24.9),
+                WyzeMeasurement(Instant.parse("2026-03-14T11:42:00Z"), 82.6, 19.6, 25.0),
+                WyzeMeasurement(Instant.parse("2026-03-13T11:41:00Z"), 82.8, 19.8, 25.0),
+                WyzeMeasurement(Instant.parse("2026-03-12T11:40:00Z"), 83.1, 19.9, 25.1),
+                WyzeMeasurement(Instant.parse("2026-03-11T11:39:00Z"), 83.0, 20.0, 25.1),
+                WyzeMeasurement(Instant.parse("2026-03-10T11:38:00Z"), 83.3, 20.1, 25.2),
+                WyzeMeasurement(Instant.parse("2026-03-09T11:37:00Z"), 83.4, 20.1, 25.2),
+                WyzeMeasurement(Instant.parse("2026-03-08T11:36:00Z"), 83.5, 20.2, 25.3),
+                WyzeMeasurement(Instant.parse("2026-03-07T11:35:00Z"), 83.6, 20.3, 25.3),
+                WyzeMeasurement(Instant.parse("2026-03-06T11:34:00Z"), 83.7, 20.3, 25.4),
+                WyzeMeasurement(Instant.parse("2026-03-05T11:33:00Z"), 83.8, 20.4, 25.4),
+                WyzeMeasurement(Instant.parse("2026-03-04T11:32:00Z"), 83.9, 20.4, 25.4),
+                WyzeMeasurement(Instant.parse("2026-03-03T11:31:00Z"), 84.0, 20.5, 25.5),
+                WyzeMeasurement(Instant.parse("2026-03-02T11:30:00Z"), 84.1, 20.5, 25.5),
+                WyzeMeasurement(Instant.parse("2026-03-01T11:29:00Z"), 84.0, 20.5, 25.5),
+                WyzeMeasurement(Instant.parse("2026-02-28T11:28:00Z"), 84.2, 20.6, 25.6),
+                WyzeMeasurement(Instant.parse("2026-02-27T11:27:00Z"), 84.3, 20.7, 25.6),
+                WyzeMeasurement(Instant.parse("2026-02-26T11:26:00Z"), 84.5, 20.8, 25.7),
+            )
+        }
+    }
+}
