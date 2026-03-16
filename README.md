@@ -6,6 +6,7 @@ Detailed setup and usage guide:
 
 - [Setup And Usage](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\SETUP_AND_USAGE.md)
 - [Quick Start](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\QUICK_START.md)
+- [Release Metadata](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\RELEASE.md)
 
 ## What it does
 
@@ -34,6 +35,12 @@ So this codebase gives you the safest supported foundation: Wyze export -> Andro
 4. Import a CSV exported from Wyze Scale.
 5. Grant Health Connect permission when prompted.
 6. Tap `Write to Health Connect`.
+
+## Release
+
+- Current release name: `Wyze Scale Bridge 1.0.0`
+- Changelog: [CHANGELOG.md](C:\Users\xliup\OneDrive\Documents\codex\weights\CHANGELOG.md)
+- Release metadata: [RELEASE.md](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\RELEASE.md)
 
 ## Local helper scripts
 

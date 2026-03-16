@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Wyze Scale Bridge</string>
+    <string name="app_description">Import Wyze Scale CSV exports into Android Health Connect.</string>
 </resources>
