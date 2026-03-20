@@ -1,6 +1,10 @@
 # Wyze Scale Bridge
 
-Android starter app that imports a Wyze Scale CSV export and writes the measurements into Android Health Connect.
+![Release](https://img.shields.io/github/v/release/rosemontni/weights?display_name=tag)
+![Android](https://img.shields.io/badge/platform-Android%209%2B-3DDC84)
+![Health Connect](https://img.shields.io/badge/integration-Health%20Connect-0F9D58)
+
+Android app that imports a Wyze Scale CSV export and writes the measurements into Android Health Connect with a narrow, weight-focused permission footprint.
 
 ## Screen Captures
 
@@ -16,11 +20,11 @@ These are live emulator screenshots generated from the app itself with:
 
 `.\scripts\capture_live_screens.ps1`
 
-Detailed setup and usage guide:
+## Documentation
 
-- [Setup And Usage](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\SETUP_AND_USAGE.md)
-- [Quick Start](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\QUICK_START.md)
-- [Release Metadata](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\RELEASE.md)
+- [Setup And Usage](docs/SETUP_AND_USAGE.md)
+- [Quick Start](docs/QUICK_START.md)
+- [Release Metadata](docs/RELEASE.md)
 
 ## What it does
 
@@ -28,6 +32,16 @@ Detailed setup and usage guide:
 - Parses weight and body-fat measurements.
 - Writes those records into Health Connect on Android 9+.
 - Shows the latest imported measurements in a simple Compose UI.
+
+## Why it feels different from Wyze direct sync
+
+Wyze can write to Health Connect directly, but it currently asks for a broad range of Health Connect permissions instead of a narrow weight-focused set.
+
+This app is meant to be a smaller, easier-to-audit bridge:
+
+- import only Wyze Scale CSV data
+- request only the Health Connect permissions needed for weight and body-fat writes
+- keep the sync scope easier to understand before Garmin or other apps read from Health Connect
 
 ## Garmin note
 
@@ -42,16 +56,6 @@ Current caveat:
 - I have evidence that Garmin Connect supports Health Connect in general, but I have not verified from Garmin documentation that `weight` and `body fat` are included in the Garmin-supported Health Connect data types.
 - Garmin's direct public APIs are still partner-oriented rather than a normal consumer import API for this app.
 
-## Why This App Exists If Wyze Supports Health Connect
-
-Wyze can write to Health Connect directly, but it currently insists on requesting a broad range of Health Connect permissions instead of a narrow weight-focused set.
-
-This app is meant to be a more limited bridge:
-
-- import only Wyze Scale CSV data
-- request only the Health Connect permissions needed for weight and body-fat writes
-- keep the sync scope easier to understand and audit
-
 ## Build
 
 1. Open the folder in Android Studio.
@@ -64,8 +68,8 @@ This app is meant to be a more limited bridge:
 ## Release
 
 - Current release name: `Wyze Scale Bridge 1.0.0`
-- Changelog: [CHANGELOG.md](C:\Users\xliup\OneDrive\Documents\codex\weights\CHANGELOG.md)
-- Release metadata: [RELEASE.md](C:\Users\xliup\OneDrive\Documents\codex\weights\docs\RELEASE.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Release metadata: [RELEASE.md](docs/RELEASE.md)
 
 ## Local helper scripts
 
